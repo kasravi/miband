@@ -4,9 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <title>Mi Band Demo</title>
-    <link rel="icon" sizes="192x192" href="../favicon.png">
+    <link rel="icon" sizes="192x192" href="./img/icons/favicon.ico">
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+    <link rel="manifest" href="./manifest.json">
   </head>
   <body>
     <div class="container">
@@ -40,13 +41,5 @@
     </div>
     <script src="miBand.js"></script>
     <script src="app.js"></script>
-    <script>
-      if (navigator.serviceWorker != null) {
-      navigator.serviceWorker.register('./sw.js')
-      .then(function(registration) {
-        alert('Registered events at scope: ', registration.scope);
-      }).catch(alert);
-    }
-    </script>
   </body>
 </html>

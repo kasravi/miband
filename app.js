@@ -1,3 +1,58 @@
+var sw;
+
+const requestNotificationPermission = async () => {
+  const permission = await window.Notification.requestPermission();
+  if(permission !== 'granted'){
+      throw new Error('Permission not granted for Notification');
+  }
+}
+
+const showLocalNotification = (title, body) => {
+  // const options = {
+  //   "//": "Visual Options",
+  //   "body": "<String>",
+  //   "icon": "<URL String>",
+  //   "image": "<URL String>",
+  //   "badge": "<URL String>",
+  //   "vibrate": "<Array of Integers>",
+  //   "sound": "<URL String>",
+  //   "dir": "<String of 'auto' | 'ltr' | 'rtl'>",
+  //   "//": "Behavioural Options",
+  //   "tag": "<String>",
+  //   "data": "<Anything>",
+  //   "requireInteraction": "<boolean>",
+  //   "renotify": "<Boolean>",
+  //   "silent": "<Boolean>",
+  //   "//": "Both Visual & Behavioural Options",
+  //   "actions": "<Array of Strings>",
+  //   "//": "Information Option. No visual affect.",
+  //   "timestamp": "<Long>"
+  // }
+  const options = {
+      body,
+      // here you can add more properties like icon, image, vibrate, etc.
+  };
+  sw.showNotification(title, options);
+}
+
+async function registerSW() { 
+  if ('serviceWorker' in navigator) { 
+    try {
+      let res = await navigator.serviceWorker.register('./sw.js'); 
+      return res;
+    } catch (e) {
+      throw e 
+    }
+  } else {
+    document.querySelector('.alert').removeAttribute('hidden'); 
+  }
+}
+
+window.addEventListener('load', async e => {
+  sw = await registerSW()
+  permission = await requestNotificationPermission();
+});
+
 var statusText = document.querySelector('#statusText');
 var subStatusText = document.querySelector('#subStatusText');
 var deviceInfo = document.querySelector('#deviceInfo');
