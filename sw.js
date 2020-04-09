@@ -27,7 +27,7 @@ async function wait(s){
   return new Promise((resolve)=>{setTimeout(()=>resolve(),s*1000)})
 }
 var stretchStarted = false;
-var stretchTimes = [10,30];
+var stretchTimes = [1,3];
 
 this.addEventListener('sync', async function(event){
   if(event.tag == 'stretch-start'){
