@@ -53,15 +53,28 @@ window.addEventListener('load', async e => {
   permission = await requestNotificationPermission();
 });
 
+const messageChannel = new MessageChannel();
+
+navigator.serviceWorker.controller.postMessage({
+  type: 'INIT_PORT',
+}, [messageChannel.port2]);
+
+messageChannel.port1.onmessage = (event) => {
+  if(event.data.type === 'vibrate'){
+    miBand.vibrate();
+  }
+};
+
+
 var statusText = document.querySelector('#statusText');
 var subStatusText = document.querySelector('#subStatusText');
 var deviceInfo = document.querySelector('#deviceInfo');
-var challengeLink = document.querySelector('#challenge a');
 var stretchLink = document.querySelector('#stretch');
 
 var offset = 0;
 
 statusText.addEventListener('click', function () {
+  
   if (miBand.device && miBand.device.gatt.connected) {
     return;
   } else {
@@ -88,7 +101,6 @@ statusText.addEventListener('click', function () {
         <div class="left">Firmware Version:</div><div class="right">${firmwareInfo.get('firmwareVersion')}</div>
         <div class="left">Profile version:</div><div class="right">${firmwareInfo.get('profileVersion')}</div>`;
         deviceInfo.innerHTML = div;
-        document.querySelector('#challenge .link').style.display = 'block';
       })
       .then(() => statusText.textContent = 'Walk...')
       .then(() => miBand.startNotifications().then(handleNotifications))
@@ -110,29 +122,22 @@ statusText.addEventListener('click', function () {
   }
 });
 
-var stretchStarted = false;
-var stretchTimes = [10000,30000];
-var lap =0;
-stretchLink.addEventListener('click',async function(){
-  try{
-    if(stretchStarted){
-      stretchStarted = false;
-      return;
-    }
-    stretchStarted=true;
-    setTimeout(()=>{stretchTimer(lap)},stretchTimes[lap])
-    await miBand.vibrate();
-  }catch(e){
-    alert(JSON.stringify(e))
-  }
-})
+stretchStarted = false;
 
-function stretchTimer(lap){
+stretchLink.addEventListener('click',async function(){
   if(stretchStarted){
-    lap =(lap+1)%2;
-    miBand.vibrate().then(()=>{setTimeout(()=>{stretchTimer(lap)},stretchTimes[lap])})
+    stretchStarted=false;
+    navigator.serviceWorker.ready.then(function(swRegistration) {
+      return swRegistration.sync.register('stretch-stop');
+    });
+    return;
   }
-}
+  stretchStarted = true;
+  navigator.serviceWorker.ready.then(function(swRegistration) {
+    return swRegistration.sync.register('stretch-start');
+  });
+  
+})
 
 function handleNotifications(notifiCharacteristic) {
   notifiCharacteristic.addEventListener('characteristicvaluechanged', event => {
@@ -183,86 +188,86 @@ function updateStats() {
 
 updateStats();
 
-challengeLink.addEventListener('click', function (event) {
-  event.preventDefault();
+// challengeLink.addEventListener('click', function (event) {
+//   event.preventDefault();
 
-  let today = new Date().toJSON().substr(0, 10);
-  let initialSteps = localStorage.getItem(today);
+//   let today = new Date().toJSON().substr(0, 10);
+//   let initialSteps = localStorage.getItem(today);
 
-  startTimer(20, document.querySelector('#time'), function() {
-    let currentSteps = localStorage.getItem(today);
-    let actualSteps =  currentSteps - initialSteps || 0;
+//   startTimer(20, document.querySelector('#time'), function() {
+//     let currentSteps = localStorage.getItem(today);
+//     let actualSteps =  currentSteps - initialSteps || 0;
 
-    let leader = localStorage.getItem('leader') ? JSON.parse(localStorage.getItem('leader')) : null;
+//     let leader = localStorage.getItem('leader') ? JSON.parse(localStorage.getItem('leader')) : null;
 
-    if (leader == null || leader.steps < actualSteps) {
-      let newLeader = createNewLeader(actualSteps);
-      localStorage.setItem('leader', JSON.stringify(newLeader));
-      updateChallenge();
-    } else {
-      let flashMessage =  document.querySelector('#challenge .message');
-      flashMessage.innerHTML = `${actualSteps} steps wasn't good enough! Please try again!`;
+//     if (leader == null || leader.steps < actualSteps) {
+//       let newLeader = createNewLeader(actualSteps);
+//       localStorage.setItem('leader', JSON.stringify(newLeader));
+//       updateChallenge();
+//     } else {
+//       let flashMessage =  document.querySelector('#challenge .message');
+//       flashMessage.innerHTML = `${actualSteps} steps wasn't good enough! Please try again!`;
 
-       setInterval(function() {
-        flashMessage.style.display = (flashMessage.style.display == 'none' ? '' : 'none');
-    }, 3000);
-    }
-  });
-});
+//        setInterval(function() {
+//         flashMessage.style.display = (flashMessage.style.display == 'none' ? '' : 'none');
+//     }, 3000);
+//     }
+//   });
+// });
 
-function createNewLeader(steps) {
-  let name = prompt(`New Record: ${steps} steps!\n\nPlease enter your name for the leaderboard`, 'default'); 
+// function createNewLeader(steps) {
+//   let name = prompt(`New Record: ${steps} steps!\n\nPlease enter your name for the leaderboard`, 'default'); 
 
-  if (name != null) {
-     let info = {
-       name,
-       steps
-     };
+//   if (name != null) {
+//      let info = {
+//        name,
+//        steps
+//      };
 
-     return info;
-  }
-}
+//      return info;
+//   }
+// }
 
-function updateChallenge() {
-  let leader = localStorage.getItem('leader');
-  if (leader) {
-    leader = JSON.parse(leader);
-    document.querySelector('#result').innerHTML = `<div class="date">${leader.name}</div><div class="steps">${leader.steps}</div>`;
-  }
-};
-updateChallenge();
+// function updateChallenge() {
+//   let leader = localStorage.getItem('leader');
+//   if (leader) {
+//     leader = JSON.parse(leader);
+//     document.querySelector('#result').innerHTML = `<div class="date">${leader.name}</div><div class="steps">${leader.steps}</div>`;
+//   }
+// };
+// updateChallenge();
 
-function startTimer(duration, display, cb) {
-       var start = Date.now(),
-        diff,
-        minutes,
-        seconds;
-    function timer() {
-        // get the number of seconds that have elapsed since 
-        // startTimer() was called
-        diff = duration - (((Date.now() - start) / 1000) | 0);
+// function startTimer(duration, display, cb) {
+//        var start = Date.now(),
+//         diff,
+//         minutes,
+//         seconds;
+//     function timer() {
+//         // get the number of seconds that have elapsed since 
+//         // startTimer() was called
+//         diff = duration - (((Date.now() - start) / 1000) | 0);
 
-        // does the same job as parseInt truncates the float
-        minutes = (diff / 60) | 0;
-        seconds = (diff % 60) | 0;
+//         // does the same job as parseInt truncates the float
+//         minutes = (diff / 60) | 0;
+//         seconds = (diff % 60) | 0;
 
-        minutes = minutes < 10 ? "0" + minutes : minutes;
-        seconds = seconds < 10 ? "0" + seconds : seconds;
+//         minutes = minutes < 10 ? "0" + minutes : minutes;
+//         seconds = seconds < 10 ? "0" + seconds : seconds;
 
-        display.textContent = minutes + ":" + seconds; 
+//         display.textContent = minutes + ":" + seconds; 
 
-        if (diff === 0) {
-          clearInterval(i);
-          display.textContent = `00:${duration}`;
-          if (cb) cb();
-        }
-        else if (diff <= 0) {
-            // add one second so that the count down starts at the full duration
-            // example 05:00 not 04:59
-            start = Date.now() + 1000;
-        }
-    };
-    // we don't want to wait a full second before the timer starts
-    timer();
-    var i = setInterval(timer, 1000);
-}
+//         if (diff === 0) {
+//           clearInterval(i);
+//           display.textContent = `00:${duration}`;
+//           if (cb) cb();
+//         }
+//         else if (diff <= 0) {
+//             // add one second so that the count down starts at the full duration
+//             // example 05:00 not 04:59
+//             start = Date.now() + 1000;
+//         }
+//     };
+//     // we don't want to wait a full second before the timer starts
+//     timer();
+//     var i = setInterval(timer, 1000);
+// }
