@@ -47,10 +47,11 @@ async function registerSW() {
     document.querySelector('.alert').removeAttribute('hidden'); 
   }
 }
-
+var noSleep;
 window.addEventListener('load', async e => {
   sw = await registerSW()
   permission = await requestNotificationPermission();
+  noSleep = new NoSleep();
 });
 
 const messageChannel = new MessageChannel();
@@ -126,12 +127,14 @@ stretchStarted = false;
 
 stretchLink.addEventListener('click',async function(){
   if(stretchStarted){
+    noSleep.disable();
     stretchStarted=false;
     navigator.serviceWorker.ready.then(function(swRegistration) {
       return swRegistration.sync.register('stretch-stop');
     });
     return;
   }
+  noSleep.enable();
   stretchStarted = true;
   navigator.serviceWorker.ready.then(function(swRegistration) {
     return swRegistration.sync.register('stretch-start');
