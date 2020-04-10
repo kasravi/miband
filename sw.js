@@ -38,6 +38,24 @@ this.addEventListener('sync', async function(event){
   }
 })
 
+self.addEventListener('activate', function(e) {
+  e.waitUntil(
+      Promise.all([
+          self.clients.claim(),
+          caches.keys().then(function(cacheNames) {
+              return Promise.all(
+                  cacheNames.map(function(cacheName) {
+                      if (cacheName !== APP_CACHE_NAME && cacheName !== STATIC_CACHE_NAME) {
+                          console.log('deleting',cacheName);
+                          return caches.delete(cacheName);
+                      }
+                  })
+              );
+          })
+      ])
+  );
+});
+
 stretchTimerFuncSync = () => {
   stretchTimerFunc().then(()=>console.log('done'))
 }
