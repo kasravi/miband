@@ -82,7 +82,7 @@ statusText.addEventListener('click', function () {
     statusText.textContent = 'Connecting...';
     let arr = [];
 
-    miBand.connect()
+    miBand.init()
       .then(() => miBand.getDeviceName())
       .then(data => arr.push(data))
       .then(() => miBand.getBatteryInfo())

@@ -33,6 +33,22 @@
   const MAC_ADDRESS_UUID = 0xFEC9;
   const VIBRATE_SERVICE_UUID = 0x1802;
 
+  function exponentialBackoff(max, delay, toTry, success, fail) {
+    toTry().then(result => success(result))
+    .catch(_ => {
+      if (max === 0) {
+        return fail();
+      }
+      time('Retrying in ' + delay + 's... (' + max + ' tries left)');
+      setTimeout(function() {
+        exponentialBackoff(--max, delay * 2, toTry, success, fail);
+      }, delay * 1000);
+    });
+  }
+  
+  function time(text) {
+    console.log('[' + new Date().toJSON().substr(11, 8) + '] ' + text);
+  }
 
   class MiBand {
     constructor() {
@@ -41,7 +57,26 @@
       this._characteristics = new Map();
       this._debug = true;
     }
-    connect() {
+    
+    connect(){
+      let self = this;
+      return new Promise((resolve,reject)=>{
+      exponentialBackoff(3 /* max retries */, 2 /* seconds delay */,
+        function toTry() {
+          time('Connecting to Bluetooth Device... ');
+          return self.device.gatt.connect();
+        },
+        function success() {
+          console.log('> Bluetooth Device connected. Try disconnect it now.');
+          resolve(self.device.gatt)
+        },
+        function fail() {
+          console.time('Failed to reconnect.');
+          reject()
+        });
+      })
+    }
+    init() {
       let options = {
         filters: [{
           name: 'MI1S'
@@ -52,7 +87,12 @@
       return navigator.bluetooth.requestDevice(options)
         .then(device => {
           this.device = device;
-          return device.gatt.connect();
+          let self = this;
+          this.device.addEventListener('gattserverdisconnected', ()=>{
+            self.connect();
+          });
+          return this.connect()
+         // return device.gatt.connect();
         })
         .then(server => {
           this.server = server;

@@ -86,7 +86,7 @@ stretchTimerFunc = async () => {
         count%=2;
       }
     }catch(e){
-      console.log(JSON.stringify(e))
+      console.log(e)
     }
 }
 
