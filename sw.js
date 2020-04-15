@@ -43,13 +43,8 @@ self.addEventListener('activate', function(e) {
   );
 });
 
-let getVersionPort;
-
 self.addEventListener("message", event => {
-  if (event.data && event.data.type === 'INIT_PORT') {
-    getVersionPort = event.ports[0];
-  }
-
+  console.log(event.data)
 })
 
 async function wait(s){
@@ -75,12 +70,18 @@ stretchTimerFuncSync = () => {
   stretchTimerFunc().then(()=>console.log('done'))
 }
 
+postMessage = msg => {
+  self.clients.matchAll().then(clients => {
+    clients.forEach(client => client.postMessage(msg));
+  });
+}
+
 stretchTimerFunc = async () => {
   stretchStarted = true;
     try{
       count=0;
       while(stretchStarted){
-        getVersionPort.postMessage({ type:'vibrate' });
+        postMessage({ type:'vibrate' });
         await wait(stretchTimes[count])
         count++;
         count%=2;

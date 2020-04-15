@@ -54,18 +54,11 @@ window.addEventListener('load', async e => {
   noSleep = new NoSleep();
 });
 
-const messageChannel = new MessageChannel();
-
-navigator.serviceWorker.controller.postMessage({
-  type: 'INIT_PORT',
-}, [messageChannel.port2]);
-
-messageChannel.port1.onmessage = (event) => {
+navigator.serviceWorker.addEventListener('message', event => { 
   if(event.data.type === 'vibrate'){
     miBand.vibrate();
   }
-};
-
+}, false);
 
 var statusText = document.querySelector('#statusText');
 var subStatusText = document.querySelector('#subStatusText');
